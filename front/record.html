@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="initial-scale=1.0, lngLat-scalable=no" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>骑行记录</title>
+    <style type="text/css">
+        html{height:100%}
+        body{height:100%;margin:0px;padding:0px}
+        #container{height:100%}
+    </style>
+    <script type="text/javascript" src="https://api.map.baidu.com/api?v=3.0&ak=yourak"></script>
+    <script type="text/javascript" src="https://api.map.baidu.com/library/DrawingManager/1.4/src/DrawingManager_min.js"></script>
+    <script type="text/javascript" src="js/jquery-3.3.1.min.js"></script>
+    <link rel="stylesheet" href="https://api.map.baidu.com/library/DrawingManager/1.4/src/DrawingManager_min.css" />
+</head>
+
+<body>
+<div id="container"></div>
+<script type="text/javascript">
+    var map = new BMap.Map("container");
+    var point = new BMap.Point(116.405571,39.849636);
+    map.centerAndZoom(point, 18);
+
+    //开启鼠标滚轮缩放
+    map.enableScrollWheelZoom(true);
+
+    //加载单车数据
+    $.ajax({
+        url: "http://localhost:8181/record/list",
+        type: "GET",
+        dataType: "json", // 指定预期的服务器响应数据类型
+        success: function(response) {
+            // 请求成功时的回调函数
+            // 创建标注
+            for (let i = 0; i < response.length; i++) {
+                let obj = response[i];
+                var riding = new BMap.RidingRoute(map, {
+                    renderOptions: {map: map}
+                });
+                var start = new BMap.Point(obj.startlng, obj.startlat);
+                var end = new BMap.Point(obj.endlng, obj.endlat);
+                riding.search(start, end);
+            }
+        },
+        error: function(xhr, status, error) {
+            // 请求失败时的回调函数
+            alert(error);
+        }
+    });
+</script>
+</body>
+</html>

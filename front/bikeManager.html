@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title></title>
+	<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+</head>
+<body>
+<div id="app">
+	<!-- 添加单车 -->
+	<el-dialog :visible.sync="visible1" title="添加单车" width="30%">
+	  <el-form :model="ruleForm" :rules="rules" ref="ruleForm" label-width="100px" class="demo-ruleForm">
+	    <el-form-item label="编号" prop="number">
+	      <el-input v-model="ruleForm.number"></el-input>
+	    </el-form-item>
+		<el-form-item label="所属区域" prop="aid">
+		  <el-select v-model="ruleForm.aid" style="width: 256px;" placeholder="请选择">
+		      <el-option
+		        v-for="item in options"
+		        :label="item.area"
+		        :value="item.id">
+		      </el-option>
+		    </el-select>
+		</el-form-item>
+	    <el-form-item label="经度" prop="lng">
+	      <el-input v-model.number="ruleForm.lng"></el-input>
+	    </el-form-item>
+		<el-form-item label="纬度" prop="lat">
+		  <el-input v-model.number="ruleForm.lat"></el-input>
+		</el-form-item>
+		<el-form-item label="押金" prop="deposit">
+		  <el-input v-model.number="ruleForm.deposit"></el-input>
+		</el-form-item>
+	    <el-form-item>
+	      <el-button type="primary" @click="addForm('ruleForm')">立即创建</el-button>
+	      <el-button @click="resetForm('ruleForm')">重置</el-button>
+	    </el-form-item>
+	  </el-form>
+	</el-dialog>
+	
+	<!-- 编辑单车 -->
+	<el-dialog :visible.sync="visible2" title="编辑单车" width="30%">
+	  <el-form :model="ruleForm" ref="ruleForm" label-width="100px" class="demo-ruleForm">
+	    <el-form-item label="ID" prop="id">
+	      <el-input v-model="ruleForm.id" readOnly></el-input>
+	    </el-form-item>
+		<el-form-item label="编号" prop="number">
+		  <el-input v-model="ruleForm.number"></el-input>
+		</el-form-item>
+		<el-form-item label="所属区域" prop="aid">
+		  <el-select v-model="ruleForm.aid" style="width: 256px;" placeholder="请选择">
+		      <el-option
+		        v-for="item in options"
+		        :label="item.area"
+		        :value="item.id">
+		      </el-option>
+		    </el-select>
+		</el-form-item>
+	    <el-form-item label="经度" prop="lng">
+	      <el-input v-model.number="ruleForm.lng"></el-input>
+	    </el-form-item>
+		<el-form-item label="纬度" prop="lat">
+		  <el-input v-model.number="ruleForm.lat"></el-input>
+		</el-form-item>
+		<el-form-item label="押金" prop="deposit">
+		  <el-input v-model.number="ruleForm.deposit"></el-input>
+		</el-form-item>
+	    <el-form-item>
+	      <el-button type="primary" @click="editForm('ruleForm')">立即编辑</el-button>
+	    </el-form-item>
+	  </el-form>
+	</el-dialog>
+	
+	<div style="margin-top: 60px;margin-left:80px;border: 0px solid red;" >
+			<el-form :model="searchRuleForm" ref="searchRuleForm" label-width="100px" class="demo-ruleForm">
+				<el-form-item prop="number" label="单车编号：" style="margin-left: -20px;">
+					<el-input v-model="searchRuleForm.number" placeholder="请输入单车编号" style="width: 230px;float: left"></el-input>
+					<el-button type="primary" icon="el-icon-search" style="float: left;position: relative;left: 25px;" @click="submitForm()">搜索</el-button>
+					<el-button type="warning" icon="el-icon-refresh-right" style="position: relative;left: 50px;" @click="resetForm('searchRuleForm')">重置</el-button>
+					<el-button type="success" icon="el-icon-folder-add" style="position: relative;left: 65px;" @click="add()">添加</el-button>
+				</el-form-item>
+			</el-form>
+			<el-table
+				:data="tableData"
+				border
+				stripe
+				style="width: 100%">
+			<el-table-column
+					fixed
+					prop="id"
+					label="ID"
+					width="80">
+			</el-table-column>
+			<el-table-column
+					prop="number"
+					label="单车编号"
+					width="120">
+			</el-table-column>
+			<el-table-column
+					prop="area"
+					label="所属区域"
+					width="120">
+			</el-table-column>
+			<el-table-column
+					prop="lng"
+					label="经度"
+					width="130">
+			</el-table-column>
+			<el-table-column
+					prop="lat"
+					label="纬度"
+					width="130">
+			</el-table-column>
+			<el-table-column
+					prop="deposit"
+					label="押金"
+					width="120">
+			</el-table-column>
+			<el-table-column
+					prop="createTime"
+					label="创建时间"
+					width="200">
+			</el-table-column>
+			<el-table-column label="操作">
+				<template slot-scope="scope">
+					<el-button
+							size="mini"
+							type="info"
+							icon="el-icon-edit"
+							@click="edit(scope.row)">编辑</el-button>
+					<el-button
+							size="mini"
+							type="danger"
+							icon="el-icon-delete"
+							@click="del(scope.row)">删除</el-button>
+					<el-button
+							size="mini"
+							type="primary"
+							icon="el-icon-position"
+							@click="position(scope.row)">定位</el-button>
+				</template>
+			</el-table-column>
+			</el-table>
+			<el-pagination style="margin-top: 20px;float: right"
+						   background
+						   layout="prev, pager, next"
+						   :page-size="pageSize"
+						   :total="total"
+						   :current-page.sync="currentPage"
+						   @current-change="page">
+			</el-pagination>
+	</div>
+</div>
+</body>
+<script src="js/vue.js"></script>
+<script src="js/elementui.js"></script>
+<script src="js/jquery-3.3.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+  new Vue({
+	el: '#app',
+	data() {
+		return {
+			tableData:null,
+			pageSize:5,
+			total:null,
+			currentPage:1,
+			searchRuleForm: {
+			  number:''
+			},
+			ruleForm: {
+			  id:'',
+			  number:'',
+			  aid:'',
+			  lng:'',
+			  lat:'',
+			  deposit:''
+			},
+			rules: {
+			  id: [{required: true, message: '请输入单车ID', trigger: 'blur'}],
+			  aid: [{required: true, message: '请选择所属区域', trigger: 'blur'}],
+			  number: [{required: true, message: '请输入单车编号', trigger: 'blur'}],
+			  lng: [{required: true, message: '请输入经度', trigger: 'blur'},{type: 'number', message: '经度必须为数字值'}],
+			  lat: [{required: true, message: '请输入纬度', trigger: 'blur'},{type: 'number', message: '纬度必须为数字值'}],
+			  deposit: [{required: true, message: '请输入押金', trigger: 'blur'},{type: 'number', message: '押金必须为数字值'}]
+			},
+			visible1:false,
+			visible2:false,
+			options:[]
+		}
+	},
+	methods:{
+		del(row) {
+			const _this = this
+			this.$confirm('确认删除单车【'+row.number+'】吗？', '提示', {
+				confirmButtonText: '确定',
+				cancelButtonText: '取消',
+				type: 'warning'
+			}).then(() => {
+				axios.delete('http://localhost:8181/bike/delete?id='+row.id).then(function (resp) {
+					if(resp.data.code==0){
+						_this.$alert('单车【'+row.number+'】删除成功', '', {
+							confirmButtonText: '确定',
+							callback: action => {
+								location.reload()
+							}
+						});
+					}
+				});
+			}).catch(() => {
+				this.$message({
+					type: 'info',
+					message: '已取消删除'
+				});
+			});
+		},
+		edit(row){
+			this.visible2 = true
+			const _this = this
+			axios.get('http://localhost:8181/area/show').then(function (resp) {
+				_this.options = resp.data
+			})
+			this.ruleForm.id = row.id
+			this.ruleForm.number = row.number
+			this.ruleForm.aid = row.aid
+			this.ruleForm.lng = row.lng
+			this.ruleForm.lat = row.lat
+			this.ruleForm.deposit = row.deposit
+		},
+		editForm(formName) {
+			this.$refs[formName].validate((valid) => {
+			  if (valid) {
+				let _this = this
+				axios.post('http://localhost:8181/bike/update',_this.ruleForm).then(function (response) {
+					if(response.data.code == 0){
+						_this.$alert('单车【'+_this.ruleForm.number+'】编辑成功', '', {
+							confirmButtonText: '确定',
+							callback: action => {
+								location.reload()
+							}
+						});
+					} else {
+						_this.$alert(response.data.msg, '提示', {
+							confirmButtonText: '确定'
+						});
+					}
+				})
+			  } else {
+				console.log('error submit!!');
+				return false;
+			  }
+			});
+		  },
+		add(){
+			this.visible1 = true
+			const _this = this
+			axios.get('http://localhost:8181/area/show').then(function (resp) {
+				_this.options = resp.data
+			})
+		},
+		addForm(formName) {
+			this.$refs[formName].validate((valid) => {
+			  if (valid) {
+				let _this = this
+				axios.post('http://localhost:8181/bike/add',_this.ruleForm).then(function (response) {
+					if(response.data.code == 0){
+						_this.$alert('单车【'+_this.ruleForm.number+'】添加成功', '', {
+							confirmButtonText: '确定',
+							callback: action => {
+								location.reload()
+							}
+						});
+					} else {
+						_this.$alert(response.data.msg, '提示', {
+							confirmButtonText: '确定'
+						});
+					}
+				})
+			  } else {
+				console.log('error submit!!');
+				return false;
+			  }
+			});
+		  },
+		resetForm(formName) {
+		  this.$refs[formName].resetFields();
+		},
+		submitForm() {
+			const _this = this
+			//让翻页复原
+			_this.currentPage = 1
+			axios.get('http://localhost:8181/bike/load?number='+_this.searchRuleForm.number+'&page='+_this.currentPage+'&limit='+_this.pageSize).then(function (resp) {
+				_this.tableData = resp.data.data
+				_this.total = resp.data.count
+			})
+		},
+		page(currentPage){
+			const _this = this
+			axios.get('http://localhost:8181/bike/load?number='+_this.searchRuleForm.number+'&page='+_this.currentPage+'&limit='+_this.pageSize).then(function (resp) {
+				_this.tableData = resp.data.data
+				_this.total = resp.data.count
+			})
+		},
+		position(row){
+			localStorage.setItem('bike',JSON.stringify(row))
+			location.href = "position.html"
+		}
+	},
+	created() {
+		const _this = this
+		axios.get('http://localhost:8181/bike/load').then(function (resp) {
+			_this.tableData = resp.data.data
+			_this.total = resp.data.count
+		})
+	}
+  })
+</script>
+	
+<style>
+    .home_container {
+        height: 100%;
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        width: 100%;
+    }
+
+    .el-header {
+        background-color: #20a0ff;
+        color: #333;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .el-aside {
+        background-color: #ECECEC;
+    }
+
+    .el-main {
+        background-color: #fff;
+        color: #000;
+        text-align: center;
+    }
+
+    .el-footer {
+        background-color: #ea7e53;
+        color: #fff;
+        font-size: 22px;
+        line-height: 60px;
+		text-align: center;
+    }
+
+    .home_title {
+        color: #fff;
+        font-size: 22px;
+        display: inline;
+    }
+
+    .home_userinfo {
+        color: #fff;
+        cursor: pointer;
+    }
+
+    .home_userinfoContainer {
+        display: inline;
+        margin-right: 20px;
+    }
+</style>
+</html>

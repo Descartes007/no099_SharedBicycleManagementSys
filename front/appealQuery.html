@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title></title>
+	<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+</head>
+<body>
+<div id="app">
+	<div style="margin-top: 60px;margin-left:80px;border: 0px solid red;" >
+			<el-form :model="searchRuleForm" ref="searchRuleForm" label-width="100px" class="demo-ruleForm">
+				<el-form-item prop="content" label="申诉内容：" style="margin-left: -20px;">
+					<el-input v-model="searchRuleForm.content" placeholder="请输入申诉内容" style="width: 230px;float: left"></el-input>
+					<span style="margin-left: -66px;">审核状态：</span>
+					<el-radio v-model="searchRuleForm.status" label="">全部状态</el-radio>
+					<el-radio v-model="searchRuleForm.status" label="0">审核中</el-radio>
+					<el-radio v-model="searchRuleForm.status" label="1">已通过</el-radio>
+					<el-radio v-model="searchRuleForm.status" label="2">未通过</el-radio>
+					<el-button type="primary" icon="el-icon-search" style="float: left;position: relative;left: 500px;" @click="submitForm()">搜索</el-button>
+					<el-button type="warning" icon="el-icon-refresh-right" style="position: relative;left: 100px;" @click="resetForm('searchRuleForm')">重置</el-button>
+				</el-form-item>
+			</el-form>
+			<el-table
+				:data="tableData"
+				border
+				stripe
+				style="width: 100%">
+			<el-table-column
+					fixed
+					prop="id"
+					label="ID"
+					width="100">
+			</el-table-column>
+			<el-table-column
+					prop="username"
+					label="用户姓名"
+					width="80">
+			</el-table-column>
+			<el-table-column
+					prop="cause"
+					label="违规原因"
+					width="130">
+			</el-table-column>
+			<el-table-column
+					prop="violationTime"
+					label="违规时间"
+					width="180">
+			</el-table-column>
+			<el-table-column
+					prop="content"
+					label="申诉内容"
+					width="130">
+			</el-table-column>
+			<el-table-column
+					prop="appealTime"
+					label="申诉时间"
+					width="180">
+			</el-table-column>
+			<el-table-column
+					label="审核状态"
+					width="100">
+				<template slot-scope="scope">
+			　　　　<font v-if="scope.row.status == 0" style="color: blue;">审核中</font>
+				   <font  v-if="scope.row.status == 1" style="color: green;">已通过</font>
+				   <font  v-if="scope.row.status == 2" style="color: red;">未通过</font>
+			　　</template>
+			</el-table-column>
+			<el-table-column
+					prop="reason"
+					label="审核原因"
+					width="130">
+			</el-table-column>
+			<el-table-column
+					prop="doAppealTime"
+					label="审核时间">
+			</el-table-column>
+			</el-table>
+			<el-pagination style="margin-top: 20px;float: right"
+						   background
+						   layout="prev, pager, next"
+						   :page-size="pageSize"
+						   :total="total"
+						   :current-page.sync="currentPage"
+						   @current-change="page">
+			</el-pagination>
+	</div>
+</div>
+</body>
+<script src="js/vue.js"></script>
+<script src="js/elementui.js"></script>
+<script src="js/jquery-3.3.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+  new Vue({
+	el: '#app',
+	data() {
+		return {
+			tableData:null,
+			pageSize:5,
+			total:null,
+			currentPage:1,
+			searchRuleForm: {
+			  content:'',
+			  status:''
+			}
+		}
+	},
+	methods:{
+		resetForm(formName) {
+		  this.$refs[formName].resetFields();
+		},
+		submitForm() {
+			const _this = this
+			//让翻页复原
+			_this.currentPage = 1
+			axios.get('http://localhost:8181/appeal/load?content='+_this.searchRuleForm.content+'&status='+_this.searchRuleForm.status+'&page='+_this.currentPage+'&limit='+_this.pageSize).then(function (resp) {
+				_this.tableData = resp.data.data
+				_this.total = resp.data.count
+			})
+		},
+		page(currentPage){
+			const _this = this
+			axios.get('http://localhost:8181/appeal/load?content='+_this.searchRuleForm.content+'&status='+_this.searchRuleForm.status+'&page='+_this.currentPage+'&limit='+_this.pageSize).then(function (resp) {
+				_this.tableData = resp.data.data
+				_this.total = resp.data.count
+			})
+		}
+	},
+	created() {
+		const _this = this
+		axios.get('http://localhost:8181/appeal/load').then(function (resp) {
+			_this.tableData = resp.data.data
+			_this.total = resp.data.count
+		})
+	}
+  })
+</script>
+	
+<style>
+    .home_container {
+        height: 100%;
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        width: 100%;
+    }
+
+    .el-header {
+        background-color: #20a0ff;
+        color: #333;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .el-aside {
+        background-color: #ECECEC;
+    }
+
+    .el-main {
+        background-color: #fff;
+        color: #000;
+        text-align: center;
+    }
+
+    .el-footer {
+        background-color: #ea7e53;
+        color: #fff;
+        font-size: 22px;
+        line-height: 60px;
+		text-align: center;
+    }
+
+    .home_title {
+        color: #fff;
+        font-size: 22px;
+        display: inline;
+    }
+
+    .home_userinfo {
+        color: #fff;
+        cursor: pointer;
+    }
+
+    .home_userinfoContainer {
+        display: inline;
+        margin-right: 20px;
+    }
+</style>
+</html>

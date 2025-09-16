@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title></title>
+	<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+</head>
+<body>
+<div id="app">
+	<!-- 违规申诉 -->
+	<el-dialog :visible.sync="visible" title="违规申诉" width="30%">
+	  <el-form :model="ruleForm" :rules="rules" ref="ruleForm" label-width="100px" class="demo-ruleForm">
+	    <el-form-item label="违规ID">
+	      <el-input v-model="ruleForm.vid" readOnly></el-input>
+	    </el-form-item>
+		<el-form-item label="记录ID">
+	      <el-input v-model="ruleForm.rid" readOnly></el-input>
+	    </el-form-item>
+		<el-form-item label="违规原因">
+		  <el-input v-model="ruleForm.cause" readOnly></el-input>
+		</el-form-item>
+		<el-form-item label="违规时间">
+		  <el-input v-model="ruleForm.violationTime" readOnly></el-input>
+		</el-form-item>
+		<el-form-item label="申诉内容" prop="content">
+		  <el-input v-model="ruleForm.content"></el-input>
+		</el-form-item>
+	    <el-form-item>
+	      <el-button type="primary" @click="appealForm('ruleForm')">立即创建</el-button>
+	      <el-button @click="resetForm('ruleForm')">重置</el-button>
+	    </el-form-item>
+	  </el-form>
+	</el-dialog>
+	
+	<div style="margin-top: 60px;margin-left:80px;border: 0px solid red;" >
+			<el-form :model="searchRuleForm" ref="searchRuleForm" label-width="100px" class="demo-ruleForm">
+				<el-form-item prop="cause" label="违规原因：" style="margin-left: -20px;">
+					<el-input v-model="searchRuleForm.cause" placeholder="请输入违规原因" style="width: 230px;float: left"></el-input>
+					<el-button type="primary" icon="el-icon-search" style="float: left;position: relative;left: 25px;" @click="submitForm()">搜索</el-button>
+					<el-button type="warning" icon="el-icon-refresh-right" style="position: relative;left: 50px;" @click="resetForm('searchRuleForm')">重置</el-button>
+				</el-form-item>
+			</el-form>
+			<el-table
+				:data="tableData"
+				border
+				stripe
+				style="width: 100%">
+			<el-table-column
+					fixed
+					prop="id"
+					label="ID"
+					width="220">
+			</el-table-column>
+			<el-table-column
+					prop="rid"
+					label="记录ID"
+					width="220">
+			</el-table-column>
+			<el-table-column
+					prop="cause"
+					label="违规原因"
+					width="320">
+			</el-table-column>
+			<el-table-column
+					prop="violationTime"
+					label="创建时间"
+					width="220">
+			</el-table-column>
+			<el-table-column label="操作">
+				<template slot-scope="scope">
+					<el-button
+							size="mini"
+							type="success"
+							icon="el-icon-phone-outline"
+							@click="appeal(scope.row)">申诉</el-button>
+				</template>
+			</el-table-column>
+			</el-table>
+			<el-pagination style="margin-top: 20px;float: right"
+						   background
+						   layout="prev, pager, next"
+						   :page-size="pageSize"
+						   :total="total"
+						   :current-page.sync="currentPage"
+						   @current-change="page">
+			</el-pagination>
+	</div>
+</div>
+</body>
+<script src="js/vue.js"></script>
+<script src="js/elementui.js"></script>
+<script src="js/jquery-3.3.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+  new Vue({
+	el: '#app',
+	data() {
+		return {
+			tableData:null,
+			pageSize:5,
+			total:null,
+			currentPage:1,
+			searchRuleForm: {
+			  cause:''
+			},
+			ruleForm:{
+				vid:'',
+				rid:'',
+				cause:'',
+				violationTime:'',
+				content:''
+			},
+			rules: {
+			  content: [{required: true, message: '请输入申诉原因', trigger: 'blur'}]
+			},
+			visible:false
+		}
+	},
+	methods:{
+		appeal(row){
+			this.visible = true
+			this.ruleForm.vid = row.id
+			this.ruleForm.rid = row.rid
+			this.ruleForm.cause = row.cause
+			this.ruleForm.violationTime = row.violationTime
+		},
+		appealForm(formName) {
+			this.$refs[formName].validate((valid) => {
+			  if (valid) {
+				let _this = this
+				axios.post('http://localhost:8181/appeal/add',_this.ruleForm).then(function (response) {
+					if(response.data.code == 0){
+						_this.$alert('申诉【'+_this.ruleForm.content+'】添加成功', '', {
+							confirmButtonText: '确定',
+							callback: action => {
+								location.reload()
+							}
+						});
+					} else {
+						_this.$alert(response.data.msg, '提示', {
+							confirmButtonText: '确定'
+						});
+					}
+				})
+			  } else {
+				console.log('error submit!!');
+				return false;
+			  }
+			});
+		  },
+		resetForm(formName) {
+		  this.$refs[formName].resetFields();
+		},
+		submitForm() {
+			const _this = this
+			//让翻页复原
+			_this.currentPage = 1
+			axios.get('http://localhost:8181/violation/list?cause='+_this.searchRuleForm.cause+'&page='+_this.currentPage+'&limit='+_this.pageSize).then(function (resp) {
+				_this.tableData = resp.data.data
+				_this.total = resp.data.count
+			})
+		},
+		page(currentPage){
+			const _this = this
+			axios.get('http://localhost:8181/violation/list?cause='+_this.searchRuleForm.cause+'&page='+_this.currentPage+'&limit='+_this.pageSize).then(function (resp) {
+				_this.tableData = resp.data.data
+				_this.total = resp.data.count
+			})
+		}
+	},
+	created() {
+		const _this = this
+		axios.get('http://localhost:8181/violation/list').then(function (resp) {
+			_this.tableData = resp.data.data
+			_this.total = resp.data.count
+		})
+	}
+  })
+</script>
+	
+<style>
+    .home_container {
+        height: 100%;
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        width: 100%;
+    }
+
+    .el-header {
+        background-color: #20a0ff;
+        color: #333;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .el-aside {
+        background-color: #ECECEC;
+    }
+
+    .el-main {
+        background-color: #fff;
+        color: #000;
+        text-align: center;
+    }
+
+    .el-footer {
+        background-color: #ea7e53;
+        color: #fff;
+        font-size: 22px;
+        line-height: 60px;
+		text-align: center;
+    }
+
+    .home_title {
+        color: #fff;
+        font-size: 22px;
+        display: inline;
+    }
+
+    .home_userinfo {
+        color: #fff;
+        cursor: pointer;
+    }
+
+    .home_userinfoContainer {
+        display: inline;
+        margin-right: 20px;
+    }
+</style>
+</html>

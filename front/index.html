@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title></title>
+	<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+</head>
+<body>
+	<div id="app">
+		<el-container class="home_container">
+		        <el-header style="background-color: #409EFF">
+					<el-avatar :src="faceImg"></el-avatar>
+		            <div class="home_title">共享单车管理系统</div>
+		            <div class="home_userinfoContainer">
+						<el-avatar :src="userImg"></el-avatar>
+		                <el-dropdown style="position: relative;top: -10px;left: 10px;">
+		                  <span class="el-dropdown-link home_userinfo">
+		                    {{user.username}}<i class="el-icon-arrow-down el-icon--right home_userinfo"></i>
+		                  </span>
+		                    <el-dropdown-menu slot="dropdown">
+		                        <el-dropdown-item @click.native="logout">退出登录</el-dropdown-item>
+		                    </el-dropdown-menu>
+		                </el-dropdown>
+		            </div>
+		        </el-header>
+		        <el-container>
+					<el-aside width="200px" style="background-color: #98F5FF">
+		                <el-menu>
+							<el-menu-item v-for="item in menu" :index="item.icon+''">
+							    <a @click="dispatcher(item.href,item.title)" style="text-decoration: none;color: inherit;">
+									<div style="position: relative;left: 5px;" >
+										<i :class="item.icon"></i>{{item.title}}
+									</div>
+								</a>
+							</el-menu-item>
+		                </el-menu>
+		            </el-aside>
+		            <el-container>
+		                <el-main style="overflow: hidden;">
+		                    <el-breadcrumb separator-class="el-icon-arrow-right">
+		                        <el-breadcrumb-item>{{title}}</el-breadcrumb-item>
+		                    </el-breadcrumb>
+		                    <iframe :src="iframeSrc" style="position: relative; top: 10px; left: -20px; width: 103%;height: 98.9%;border-top: 1px solid #FFF5EE ;border-left: 0px;border-right: 0px;border-bottom: 0px;"></iframe>
+		                </el-main>
+		                <el-footer style="background-color: #FFF0F5;color: #000000;">@2024 Shared Bike System</el-footer>
+		            </el-container>
+		
+		        </el-container>
+		
+		    </el-container>
+	</div>
+</body>
+<script src="js/vue.js"></script>
+<script src="js/elementui.js"></script>
+<script src="js/jquery-3.3.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+  new Vue({
+	el: '#app',
+	methods: {
+		logout(){
+			let _this = this;
+			this.$confirm('注销登录吗?', '提示', {
+				confirmButtonText: '确定',
+				cancelButtonText: '取消',
+				type: 'warning'
+			}).then(function () {
+				localStorage.removeItem('user')
+				location.href='login.html'
+			})
+		},
+		dispatcher(src,title){
+			this.iframeSrc = src
+			this.title = title
+		}
+	},
+	mounted: function () {
+		let user = JSON.parse(window.localStorage.getItem('user'))
+		this.user = user
+		let _this = this
+		axios.get('http://localhost:8181/menu/leftMenu').then(function (response) {
+		  _this.menu = response.data
+		})
+	},
+	data(){
+		return {
+			user:'',
+			faceImg:'images/face.jpg',
+			userImg:'images/user.jpg',
+			menu:'',
+			iframeSrc:'welcome.html',
+			title:'首页'
+		}
+	}
+  })
+</script>
+	
+<style>
+    .home_container {
+        height: 100%;
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        width: 100%;
+    }
+
+    .el-header {
+        background-color: #20a0ff;
+        color: #333;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .el-aside {
+        background-color: #ECECEC;
+    }
+
+    .el-main {
+        background-color: #fff;
+        color: #000;
+        text-align: center;
+    }
+
+    .el-footer {
+        background-color: #ea7e53;
+        color: #fff;
+        font-size: 22px;
+        line-height: 60px;
+		text-align: center;
+    }
+
+    .home_title {
+        color: #fff;
+        font-size: 22px;
+        display: inline;
+		position: relative;
+		left: -580px;
+    }
+
+    .home_userinfo {
+        color: #fff;
+        cursor: pointer;
+    }
+
+    .home_userinfoContainer {
+        display: inline;
+        margin-right: 20px;
+    }
+</style>
+</html>

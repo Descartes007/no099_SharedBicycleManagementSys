@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title></title>
+	<style type="text/css">
+	    html{height:100%}
+	    body{height:100%;margin:0px;padding:0px}
+	    #container{height:100%}
+	</style>
+	<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+	<link rel="stylesheet" href="css/public.css" media="all" />
+	<link rel="stylesheet" href="https://api.map.baidu.com/library/DrawingManager/1.4/src/DrawingManager_min.css" />
+	<script type="text/javascript" src="https://api.map.baidu.com/api?v=3.0&ak=yourak"></script>
+	<script type="text/javascript" src="https://api.map.baidu.com/library/DrawingManager/1.4/src/DrawingManager_min.js"></script>
+	<script type="text/javascript" src="js/jquery-3.3.1.min.js"></script>
+	<script src="js/vue.js"></script>
+	<script src="js/elementui.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+	<div id="container"></div>	
+	<div id="app">
+		<el-form :model="ruleForm" :rules="rules"
+				style="position: absolute;top: -60px;left: 460px;"
+				v-if="show"
+				 status-icon
+				 ref="ruleForm"
+				 label-position="left"
+				 label-width="0px"
+				 class="demo-ruleForm login-page">
+			<h3 class="title">添加停车区域</h3>
+			<el-form-item prop="area">
+				<el-input type="text"
+						  v-model="ruleForm.area"
+						  auto-complete="off"
+						  placeholder="请输入区域名称"
+				></el-input>
+			</el-form-item>
+			<el-form-item prop="price">
+				<el-input type="text"
+						  v-model="ruleForm.price"
+						  auto-complete="off"
+						  placeholder="请输入停车费用"
+				></el-input>
+			</el-form-item>
+			<el-form-item style="width:100%;">
+				<el-button type="primary" @click="handleSubmit">立即创建</el-button>
+				<el-button @click="resetForm('ruleForm')">重置</el-button>
+			</el-form-item>
+		</el-form>
+	</div>
+</body>
+<script>
+  new Vue({
+	el: '#app',
+	  data() {
+		  return {
+			  show:false,
+			  overlayof:'',
+			  overlaylf:'',
+			  ruleForm: {
+				  area: '',
+				  price: '',
+				  leftlng:'',
+				  leftlat:'',
+				  rightlng:'',
+				  rightlat:''
+			  },
+			  rules: {
+				  area: [{required: true, message: '请输入区域名称', trigger: 'blur'}],
+				  price: [{required: true, message: '请输入停车费用', trigger: 'blur'}]
+			  }
+		  }
+	  },
+	  created() {
+	  	 //初始化地图
+		var map = new BMap.Map("container");
+		var point = new BMap.Point(116.405571,39.849636);
+		map.centerAndZoom(point, 18);
+		// 添加控件
+		map.addControl(new BMap.NavigationControl());
+		//开启鼠标滚轮缩放
+		map.enableScrollWheelZoom(true);
+
+		//加载区域数据
+		$.ajax({
+			url: "http://localhost:8181/area/show",
+			type: "GET",
+			dataType: "json", // 指定预期的服务器响应数据类型
+			success: function(response) {
+				// 请求成功时的回调函数
+				for (let i = 0; i < response.length; i++) {
+					let obj = response[i];
+					// 添加多边形
+					var polygon = new BMap.Polygon([
+						new BMap.Point(obj.leftlng,obj.rightlat),
+						new BMap.Point(obj.rightlng,obj.rightlat),
+						new BMap.Point(obj.rightlng,obj.leftlat),
+						new BMap.Point(obj.leftlng,obj.leftlat)
+					], {strokeColor:"red", strokeWeight:2, strokeOpacity:0.5});
+					map.addOverlay(polygon);
+
+					//添加标注
+					var point = new BMap.Point(
+							obj.leftlng,
+							(parseFloat(obj.rightlat)+parseFloat(obj.leftlat))/2+0.00008);
+					var opts = {
+						position: point,
+						offset: new BMap.Size(10, 0)
+					}
+					var label = new BMap.Label("【"+obj.area+"】"+obj.price+"元/小时", opts);
+					label.setStyle({
+						color : "blue",
+						fontSize : "13px",
+						fontWeight: 700,
+						height : "20px",
+						lineHeight : "20px"
+					});
+					map.addOverlay(label)
+				}
+			},
+			error: function(xhr, status, error) {
+				// 请求失败时的回调函数
+				alert(error);
+			}
+		});
+		//鼠标绘制工具
+		var styleOptions = {
+			strokeColor:"red",    //边线颜色。
+			fillColor:"red",      //填充颜色。当参数为空时，圆形将没有填充效果。
+			strokeWeight: 3,       //边线的宽度，以像素为单位。
+			strokeOpacity: 0.8,    //边线透明度，取值范围0 - 1。
+			fillOpacity: 0.6,      //填充的透明度，取值范围0 - 1。
+			strokeStyle: 'solid' //边线的样式，solid或dashed。
+		}
+		//实例化鼠标绘制工具
+		var drawingManager = new BMapLib.DrawingManager(map, {
+			isOpen: false, //是否开启绘制模式
+			enableDrawingTool: true, //是否显示工具栏
+			drawingToolOptions: {
+				anchor: BMAP_ANCHOR_TOP_RIGHT, //位置
+				offset: new BMap.Size(20, 20), //偏离值
+				drawingModes : [BMAP_DRAWING_RECTANGLE], //设置只显示画矩形、圆的模式
+			},
+		});
+		//监听事件
+		let _this = this
+		drawingManager.addEventListener("rectanglecomplete", function(e, overlay) {
+			_this.show = true
+			_this.overlayof = overlay.ov.of
+			_this.overlaylf = overlay.ov.lf
+		});
+	  },
+	  methods: {
+		  resetForm(formName) {
+			  this.$refs[formName].resetFields();
+			},
+		  handleSubmit(){
+			  this.$refs.ruleForm.validate((valid) => {
+				  if(valid){
+					  let _this = this
+					  _this.ruleForm.leftlng = _this.overlayof.lng
+					  _this.ruleForm.leftlat = _this.overlayof.lat
+					  _this.ruleForm.rightlng = _this.overlaylf.lng
+					  _this.ruleForm.rightlat = _this.overlaylf.lat
+					  axios.get('http://localhost:8181/area/add', {params:_this.ruleForm}).then(function (response) {
+						  if(response.data.code == -1){
+							  _this.$alert(response.data.msg, '提示', {
+								  confirmButtonText: '确定'
+							  })
+						  }
+						  if(response.data.code == 0){
+							  _this.$alert(response.data.msg, '提示', {
+									confirmButtonText: '确定',
+								  callback: action => {
+									  location.reload()
+								  }
+							  })
+						  }
+					  })
+				  }else{
+					  console.log('error submit!');
+					  return false;
+				  }
+			  })
+		  }
+	  }
+  })
+</script>
+	
+<style scoped>
+	.login-container {
+		width: 100%;
+		height: 100%;
+	}
+	.login-page {
+		-webkit-border-radius: 5px;
+		border-radius: 5px;
+		margin: 180px auto;
+		width: 350px;
+		padding: 35px 35px 15px;
+		background: #fff;
+		border: 1px solid #eaeaea;
+		box-shadow: 0 0 25px #cac6c6;
+	}
+	label.el-checkbox.rememberme {
+		margin: 0px 0px 15px;
+		text-align: left;
+	}
+	  .code-img {
+		width: 113px;
+		height: 40px;
+		margin-left: 8px;
+		position: absolute;
+		cursor: pointer;
+	  }
+</style>
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+		<script src="js/echarts.js"></script>
+		<script type="text/javascript" src="js/jquery-3.3.1.min.js"></script>
+	</head>
+	<body>
+		<div id="main" style="margin-top: 20px; width: 100%;height:500px;"></div>
+		<script type="text/javascript">
+			// 基于准备好的dom，初始化echarts实例
+			$.ajax({
+				url: "http://localhost:8181/bike/bar",
+				type: "GET",
+				dataType: "json", // 指定预期的服务器响应数据类型
+				success: function(response) {
+					var myChart = echarts.init(document.getElementById('main'));
+
+					var option = {
+								title:{
+									text:'区域单车数量',
+									x:'center'
+								},
+								color: ['#3398DB'],
+								tooltip : {
+									trigger: 'axis',
+									axisPointer : {            // 坐标轴指示器，坐标轴触发有效
+										type : 'shadow'        // 默认为直线，可选为：'line' | 'shadow'
+									}
+								},
+								grid: {
+									top:'20%',
+									left: '3%',
+									right: '4%',
+									bottom: '1%',
+									containLabel: true
+								},
+								xAxis : [
+									{
+										type : 'category',
+										data : response.areaList,
+										axisTick: {
+											alignWithLabel: true
+										}
+									}
+								],
+								yAxis : [
+									{
+										type : 'value'
+									}
+								],
+								series : [
+									{
+										name:'单车数量',
+										type:'bar',
+										barWidth: '30%',
+										data:response.countList,
+										animationType: 'scale',
+										animationEasing: 'elasticOut',
+										animationDelay: function (idx) {
+											return Math.random() * 200;
+										}
+									}
+								]
+							};
+					// 使用刚指定的配置项和数据显示图表。
+					myChart.setOption(option);
+				},
+				error: function(xhr, status, error) {
+					// 请求失败时的回调函数
+					alert(error);
+				}
+			});
+
+		</script>
+	</body>
+</html>

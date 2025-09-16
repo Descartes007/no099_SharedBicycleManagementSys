@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="initial-scale=1.0, lngLat-scalable=no" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>单车位置展示</title>
+    <style type="text/css">
+        html{height:100%}
+        body{height:100%;margin:0px;padding:0px}
+        #container{height:100%}
+    </style>
+    <script type="text/javascript" src="https://api.map.baidu.com/api?v=3.0&ak=yourak"></script>
+    <script type="text/javascript" src="https://api.map.baidu.com/library/DrawingManager/1.4/src/DrawingManager_min.js"></script>
+    <script type="text/javascript" src="js/jquery-3.3.1.min.js"></script>
+    <link rel="stylesheet" href="https://api.map.baidu.com/library/DrawingManager/1.4/src/DrawingManager_min.css" />
+</head>
+
+<body>
+<div id="container"></div>
+<script type="text/javascript">
+    var map = new BMap.Map("container");
+    var point = new BMap.Point(116.405571,39.849636);
+    map.centerAndZoom(point, 18);
+
+    //开启鼠标滚轮缩放
+    map.enableScrollWheelZoom(true);
+
+    //加载单车数据
+    $.ajax({
+        url: "http://localhost:8181/bike/list",
+        type: "GET",
+        dataType: "json", // 指定预期的服务器响应数据类型
+        success: function(response) {
+			for(let i = 0; i < response.length;i++){
+				let obj = response[i];
+				var point = new BMap.Point(obj.lng,obj.lat);
+				var marker = new BMap.Marker(point);
+				map.addOverlay(marker);
+				marker.setAnimation(BMAP_ANIMATION_BOUNCE);
+				
+				var opts = {
+					position: point,    // 指定文本标注所在的地理位置
+					offset: new BMap.Size(0, 0)    //设置文本偏移量
+				}
+				var label = new BMap.Label("单车编号："+obj.number, opts);  // 创建文本标注对象
+				label.setStyle({
+					color : "red",
+					fontSize : "13px",
+					height : "20px",
+					lineHeight : "20px"
+				});
+				map.addOverlay(label)
+			}
+        },
+        error: function(xhr, status, error) {
+            // 请求失败时的回调函数
+            console.log(error);
+        }
+    });
+</script>
+</body>
+</html>

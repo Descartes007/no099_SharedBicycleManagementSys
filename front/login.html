@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title></title>
+	<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+	<link rel="stylesheet" href="css/public.css" media="all" />
+</head>
+<body class="loginBody" style="overflow-y: hidden;">
+	<div id="app">
+		<div class="login_face" style="position: relative;top: 150px;"><img src="images/face.jpg" class="userAvatar"></div>
+		<div class="login-container" style="margin-top: -70px;">
+			<el-form :model="ruleForm" :rules="rules"
+					 status-icon
+					 ref="ruleForm"
+					 label-position="left"
+					 label-width="0px"
+					 class="demo-ruleForm login-page">
+				<h3 class="title">系统登录</h3>
+				<el-form-item prop="loginname">
+					<el-input type="text"
+							  v-model="ruleForm.loginname"
+							  auto-complete="off"
+							  placeholder="用户名"
+					></el-input>
+				</el-form-item>
+				<el-form-item prop="password">
+					<el-input type="password"
+							  v-model="ruleForm.password"
+							  auto-complete="off"
+							  placeholder="密码"
+					></el-input>
+				</el-form-item>
+				<el-form-item prop="type">
+					<el-select style="width: 350px;" v-model="ruleForm.type" placeholder="请选择用户类型">
+					    <el-option
+					      v-for="item in options"
+					      :key="item.value"
+					      :label="item.label"
+					      :value="item.value">
+					    </el-option>
+					  </el-select>
+				</el-form-item>
+				<el-form-item prop="code">
+					<el-input type="text"
+							  v-model="ruleForm.code"
+							  auto-complete="off"
+							  placeholder="验证码"
+							  style="width: 65%"
+					></el-input>
+					<span @click="getCode">
+						<el-image
+						  class="code-img"
+						  :src="codePath"
+						/>
+					</span>
+				</el-form-item>
+				<el-form-item style="width:100%;">
+					<el-button type="primary" style="width:100%;" @click="handleSubmit" :loading="logining">登录</el-button>
+				</el-form-item>
+			</el-form>
+		</div>
+	</div>
+</body>
+<script src="js/vue.js"></script>
+<script src="js/elementui.js"></script>
+<script src="js/jquery-3.3.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+  new Vue({
+	el: '#app',
+	  data() {
+		  return {
+			  logining: false,
+			  codePath:'',
+			  options: [
+				  {
+					value: 1,
+					label: '监管用户'
+				  }, {
+					value: 2,
+					label: '运营用户'
+				  }, {
+					value: 3,
+					label: '调度用户'
+				  }, {
+					value: 4,
+					label: '普通用户'
+				  }
+				],
+			  ruleForm: {
+				  loginname: 'jg',
+				  password: '123456',
+				  type:'',
+				  code:''
+			  },
+			  rules: {
+				  loginname: [{required: true, message: '请输入用户名', trigger: 'blur'}],
+				  password: [{required: true, message: '请输入密码', trigger: 'blur'}],
+				  code: [{required: true, message: '请输入验证码', trigger: 'blur'}],
+				  type: [{required: true, message: '请选择用户类型', trigger: 'blur'}]
+			  }
+		  }
+	  },
+	  created() {
+	  	 this.getCode()
+	  },
+	  methods: {
+		  getCode(){
+			let _this = this
+			axios.get('http://localhost:8181/getCode').then(function(response){
+				
+				_this.codePath = response.data
+			})
+		  },
+		  handleSubmit(){
+			  this.$refs.ruleForm.validate((valid) => {
+				  if(valid){
+					  this.logining = true
+					  let _this = this
+					  axios.get('http://localhost:8181/login', {params:_this.ruleForm}).then(function (response) {
+						  _this.logining = false
+						  if(response.data.code == -1){
+							  _this.$alert(response.data.msg, '提示', {
+								  confirmButtonText: '确定'
+							  })
+						  }
+						  if(response.data.code == 0){
+							  if(response.data.type == 4){
+								  localStorage.setItem('user', JSON.stringify(response.data.user));
+							  } else {
+								  localStorage.setItem('user', JSON.stringify(response.data.admin));
+							  }
+							  location.href="index.html"
+						  }
+					  })
+				  }else{
+					  console.log('error submit!');
+					  return false;
+				  }
+			  })
+		  }
+	  }
+  })
+</script>
+	
+	
+<style scoped>
+	.login-container {
+		width: 100%;
+		height: 100%;
+	}
+	.login-page {
+		-webkit-border-radius: 5px;
+		border-radius: 5px;
+		margin: 180px auto;
+		width: 350px;
+		padding: 35px 35px 15px;
+		background: #fff;
+		border: 1px solid #eaeaea;
+		box-shadow: 0 0 25px #cac6c6;
+	}
+	label.el-checkbox.rememberme {
+		margin: 0px 0px 15px;
+		text-align: left;
+	}
+	  .code-img {
+		width: 113px;
+		height: 40px;
+		margin-left: 8px;
+		position: absolute;
+		cursor: pointer;
+	  }
+</style>
+</html>

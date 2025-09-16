@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title></title>
+	<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+</head>
+<body>
+<div id="app">
+	<!-- 故障上报 -->
+	<el-dialog :visible.sync="visible" title="故障上报" width="30%">
+	  <el-form :model="ruleForm" :rules="rules" ref="ruleForm" label-width="100px" class="demo-ruleForm">
+	    <el-form-item label="单车编号" prop="bid">
+	      <el-select v-model="ruleForm.bid" style="width: 255px;" placeholder="请选择">
+	          <el-option
+	            v-for="item in options"
+	            :label="item.number"
+	            :value="item.id">
+	          </el-option>
+	        </el-select>
+	    </el-form-item>
+		<el-form-item label="故障原因" prop="reason">
+	      <el-input v-model="ruleForm.reason"></el-input>
+	    </el-form-item>
+		<el-form-item label="经度" prop="lng">
+	      <el-input v-model.number="ruleForm.lng"></el-input>
+	    </el-form-item>
+		<el-form-item label="纬度" prop="lat">
+		  <el-input v-model.number="ruleForm.lat"></el-input>
+		</el-form-item>
+	    <el-form-item>
+	      <el-button type="primary" @click="addForm('ruleForm')">立即上报</el-button>
+	      <el-button @click="resetForm('ruleForm')">重置</el-button>
+	    </el-form-item>
+	  </el-form>
+	</el-dialog>
+	
+	<div style="margin-top: 60px;margin-left:80px;border: 0px solid red;" >
+			<el-form :model="searchRuleForm" ref="searchRuleForm" label-width="100px" class="demo-ruleForm">
+				<el-form-item prop="reason" label="故障原因：" style="margin-left: -20px;">
+					<el-input v-model="searchRuleForm.reason" placeholder="请输入故障原因" style="width: 230px;float: left"></el-input>
+					<el-button type="primary" icon="el-icon-search" style="float: left;position: relative;left: 25px;" @click="submitForm()">搜索</el-button>
+					<el-button type="warning" icon="el-icon-refresh-right" style="position: relative;left: 50px;" @click="resetForm('searchRuleForm')">重置</el-button>
+					<el-button type="success" icon="el-icon-folder-add" style="position: relative;left: 65px;" @click="add()">添加</el-button>
+				</el-form-item>
+			</el-form>
+			<el-table
+				:data="tableData"
+				border
+				stripe
+				style="width: 100%">
+			<el-table-column
+					fixed
+					prop="id"
+					label="ID"
+					width="80">
+			</el-table-column>
+			<el-table-column
+					prop="username"
+					label="用户姓名"
+					width="120">
+			</el-table-column>
+			<el-table-column
+					prop="number"
+					label="单车编号"
+					width="120">
+			</el-table-column>
+			<el-table-column
+					prop="reason"
+					label="故障原因"
+					width="180">
+			</el-table-column>
+			<el-table-column
+					prop="lng"
+					label="经度"
+					width="180">
+			</el-table-column>
+			<el-table-column
+					prop="lat"
+					label="纬度"
+					width="180">
+			</el-table-column>
+			<el-table-column
+					prop="createTime"
+					label="创建时间"
+					width="180">
+			</el-table-column>
+			<el-table-column label="操作">
+				<template slot-scope="scope">
+					<el-button
+							size="mini"
+							type="primary"
+							icon="el-icon-position"
+							@click="position(scope.row)">定位</el-button>
+				</template>
+			</el-table-column>
+			</el-table>
+			<el-pagination style="margin-top: 20px;float: right"
+						   background
+						   layout="prev, pager, next"
+						   :page-size="pageSize"
+						   :total="total"
+						   :current-page.sync="currentPage"
+						   @current-change="page">
+			</el-pagination>
+	</div>
+</div>
+</body>
+<script src="js/vue.js"></script>
+<script src="js/elementui.js"></script>
+<script src="js/jquery-3.3.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+  new Vue({
+	el: '#app',
+	data() {
+		return {
+			tableData:null,
+			pageSize:5,
+			total:null,
+			currentPage:1,
+			searchRuleForm: {
+			  reason:''
+			},
+			ruleForm: {
+			  bid:'',
+			  reason:'',
+			  lng:'',
+			  lat:''
+			},
+			rules: {
+			  bid: [{required: true, message: '请选择单车', trigger: 'blur'}],
+			  reason: [{required: true, message: '请输入故障原因', trigger: 'blur'}],
+			  lng: [{required: true, message: '请输入经度', trigger: 'blur'},{type: 'number', message: '经度必须为数字值'}],
+			  lat: [{required: true, message: '请输入纬度', trigger: 'blur'},{type: 'number', message: '纬度必须为数字值'}]
+			},
+			visible:false,
+			options:''
+		}
+	},
+	methods:{
+		position(row){
+			localStorage.setItem('bike',JSON.stringify(row))
+			location.href = "position.html"
+		},
+		add(){
+			this.visible = true
+			let _this = this
+			axios.get('http://localhost:8181/bike/list').then(function (response) {
+				_this.options = response.data
+			})
+		},
+		addForm(formName) {
+			this.$refs[formName].validate((valid) => {
+			  if (valid) {
+				let _this = this
+				axios.post('http://localhost:8181/fault/add',_this.ruleForm).then(function (response) {
+					if(response.data.code == 0){
+						_this.$alert('故障【'+_this.ruleForm.reason+'】添加成功', '', {
+							confirmButtonText: '确定',
+							callback: action => {
+								location.reload()
+							}
+						});
+					} else {
+						_this.$alert(response.data.msg, '提示', {
+							confirmButtonText: '确定'
+						});
+					}
+				})
+			  } else {
+				console.log('error submit!!');
+				return false;
+			  }
+			});
+		  },
+		resetForm(formName) {
+		  this.$refs[formName].resetFields();
+		},
+		submitForm() {
+			const _this = this
+			//让翻页复原
+			_this.currentPage = 1
+			axios.get('http://localhost:8181/fault/list?reason='+_this.searchRuleForm.reason+'&page='+_this.currentPage+'&limit='+_this.pageSize).then(function (resp) {
+				_this.tableData = resp.data.data
+				_this.total = resp.data.count
+			})
+		},
+		page(currentPage){
+			const _this = this
+			axios.get('http://localhost:8181/fault/list?reason='+_this.searchRuleForm.reason+'&page='+_this.currentPage+'&limit='+_this.pageSize).then(function (resp) {
+				_this.tableData = resp.data.data
+				_this.total = resp.data.count
+			})
+		}
+	},
+	created() {
+		const _this = this
+		axios.get('http://localhost:8181/fault/list').then(function (resp) {
+			_this.tableData = resp.data.data
+			_this.total = resp.data.count
+		})
+	}
+  })
+</script>
+	
+<style>
+    .home_container {
+        height: 100%;
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        width: 100%;
+    }
+
+    .el-header {
+        background-color: #20a0ff;
+        color: #333;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .el-aside {
+        background-color: #ECECEC;
+    }
+
+    .el-main {
+        background-color: #fff;
+        color: #000;
+        text-align: center;
+    }
+
+    .el-footer {
+        background-color: #ea7e53;
+        color: #fff;
+        font-size: 22px;
+        line-height: 60px;
+		text-align: center;
+    }
+
+    .home_title {
+        color: #fff;
+        font-size: 22px;
+        display: inline;
+    }
+
+    .home_userinfo {
+        color: #fff;
+        cursor: pointer;
+    }
+
+    .home_userinfoContainer {
+        display: inline;
+        margin-right: 20px;
+    }
+</style>
+</html>
